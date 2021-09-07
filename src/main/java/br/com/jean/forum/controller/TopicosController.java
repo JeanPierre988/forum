@@ -8,6 +8,7 @@ import br.com.jean.forum.modelo.Topico;
 import br.com.jean.forum.repository.CursoRepository;
 import br.com.jean.forum.repository.TopicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,7 +37,7 @@ public class TopicosController {
     @GetMapping
     @Cacheable(value = "listaDeTopicos")
     public Page<TopicoDto> lista(@RequestParam(required = false) String nomeCurso,
-                                 @PageableDefault(sort = "id", direction = Sort.Direction.DESC, page = 0, size = 10) Pageable paginacao){
+                                 @PageableDefault(sort = "id", direction = Sort.Direction.DESC, page = 0, size = 10) Pageable paginacao) {
 
         if (nomeCurso != null) {
             Page<Topico> topicoList = topicoRepository.findByCurso_nome(nomeCurso, paginacao);
@@ -49,7 +50,8 @@ public class TopicosController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<TopicoDto> cadastrar(@RequestBody @Valid TopicoForm form, UriComponentsBuilder uriBuilder){
+    @CacheEvict(value = "listaDeTopicos", allEntries = true)
+    public ResponseEntity<TopicoDto> cadastrar(@RequestBody @Valid TopicoForm form, UriComponentsBuilder uriBuilder) {
         Topico topico = form.convert(cursoRepository);
         topicoRepository.save(topico);
 
@@ -58,9 +60,9 @@ public class TopicosController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DetalhesDoTopicoDto> detalhar(@PathVariable Long id){
+    public ResponseEntity<DetalhesDoTopicoDto> detalhar(@PathVariable Long id) {
         Optional<Topico> topico = topicoRepository.findById(id);
-        if(topico.isPresent()){
+        if (topico.isPresent()) {
             return ResponseEntity.ok(new DetalhesDoTopicoDto(topico.get()));
         }
         return ResponseEntity.notFound().build();
@@ -68,7 +70,8 @@ public class TopicosController {
 
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<TopicoDto> atualizar(@PathVariable Long id, @RequestBody @Valid AtualizacaoTopicoForm form){
+    @CacheEvict(value = "listaDeTopicos", allEntries = true)
+    public ResponseEntity<TopicoDto> atualizar(@PathVariable Long id, @RequestBody @Valid AtualizacaoTopicoForm form) {
         Optional<Topico> optional = topicoRepository.findById(id);
         if (optional.isPresent()) {
             Topico topico = form.atualizar(id, topicoRepository);
@@ -79,7 +82,8 @@ public class TopicosController {
 
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> remover(@PathVariable Long id){
+    @CacheEvict(value = "listaDeTopicos", allEntries = true)
+    public ResponseEntity<?> remover(@PathVariable Long id) {
         Optional<Topico> topico = topicoRepository.findById(id);
         if (topico.isPresent()) {
             topicoRepository.deleteById(id);
